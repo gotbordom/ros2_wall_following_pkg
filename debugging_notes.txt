@@ -1,0 +1,131 @@
+Looking at robot logs,
+1.) My ODOM DIST All look identical...
+[wall_follower_node-1] [INFO] [1737779698.029062543] [wall_follower_node]:
+[wall_follower_node-1] ODOM DISTANCES
+[wall_follower_node-1] ==============
+[wall_follower_node-1] FRONT LEFT:  dX = 0.000311, dY = 0.499993
+[wall_follower_node-1] FRONT RIGHT: dX = 0.000311, dY = 0.499993
+[wall_follower_node-1] LEFT:        dX = 0.000311, dY = 0.499993
+[wall_follower_node-1] RIGHT:       dX = 0.000311, dY = 0.499993
+
+a.) Could be that laser scan just isn't  done yet. So all values are differencing off 0.
+    - This is likeyl the case, since after laser scan is done the data differs.
+    - Though these should all be matching odom data for X/ Y pose? Which they do.
+      So this still makes sense.
+
+Second reading came  AFTER LASER SCAN finished its work
+wall_follower_node-1] FRONT LEFT:  dX = 0.314997, dY = 0.163022
+[wall_follower_node-1] FRONT RIGHT: dX = 0.314997, dY = 0.163022
+[wall_follower_node-1] LEFT:        dX = 0.308364, dY = 0.511902
+[wall_follower_node-1] RIGHT:       dX = 0.513096, dY = 0.512433
+
+It looks Better, BUT x and y might be swapped.
+a.) Front Left/Right Y Looks ok. X however is WAY to small.
+b.) Left.X should be closer to 0, while Left.Y should be closer to the distance 
+    from robot to nearest wall point. In other words.
+    Being more specific.
+    Diff to left Wall  X ~= 0
+    Diff to left Wall  Y ~= 0.3
+    Diff to right Wall X ~= 0
+    Diff to 
+
+So I think the issue is that I accidently tried translating these to world frame.
+Basically the laser scanner gives me distance and angle from center of robot.
+
+SO my distance to the wall should be:
+y = sin(laser_scan.angle) * laser_scan.value;
+x = cos(laser_scan.angle) * laser_scan.value;
+
+I took the different after that from the POSE of the Robot.
+-------------------------------------
+2.) LASER SCAN CALLBACK looks fine.
+
+[wall_follower_node-1] CURRENT STATE
+[wall_follower_node-1] =============
+[wall_follower_node-1] LEFT:        SIZE = 90, MIN VALUE = 0.308905, MIN ANGLE = 1.609359
+[wall_follower_node-1] RIGHT:       SIZE = 90, MIN VALUE = 0.512935, MIN ANGLE = 4.688134
+[wall_follower_node-1] FRONT LEFT:  SIZE = 45, MIN VALUE = 0.461485, MIN ANGLE = 0.752201
+[wall_follower_node-1] FRONT RIGHT: SIZE = 45, MIN VALUE = 0.660563, MIN ANGLE = 5.545292
+
+=========================================================================================
+CHANGES MADE FOR NEXT DEBUG
+===========================
+1. Odom callback calculates distance to walls and doesn't remove its own Odom values from them.
+   Which  it used to do.
+
+THIS TIME DATA LOOKS... better
+[wall_follower_node-1] [INFO] [1737782578.942891018] [wall_follower_node]:
+[wall_follower_node-1] ODOM DISTANCES
+[wall_follower_node-1] ==============
+[wall_follower_node-1] FRONT LEFT:  dX = 0.326144, dY = 0.336553
+[wall_follower_node-1] FRONT RIGHT: dX = 0.326144, dY = 0.336553
+[wall_follower_node-1] LEFT:        dX = 0.308172, dY = 0.058899
+[wall_follower_node-1] RIGHT:       dX = -0.481436, dY = -0.003256
+
+a.) Though there is still a negative, which tells me that the min RIGHT VALUE is both behind
+    and to the right of the robot. THIS IS GOOD, but also bad because my checks assume all 
+    positive values.
+=========================================================================================
+CHANGES MADE FOR NEXT DEBUG
+===========================
+1. Need my distance to a wall in abs.
+
+[wall_follower_node-1] ODOM DISTANCES
+[wall_follower_node-1] ==============
+[wall_follower_node-1] FRONT LEFT:  dX = 0.497309, dY = 0.570209
+[wall_follower_node-1] FRONT RIGHT: dX = 0.497309, dY = 0.570209
+[wall_follower_node-1] LEFT:        dX = 0.422654, dY = 0.321850
+[wall_follower_node-1] RIGHT:       dX = 0.463292, dY = 0.093521
+
+a.) Found that I was logging the  same value  for both FRONT LEFT and FRONT RIGHT
+
+
+=========================================================================================
+CHANGES MADE FOR NEXT DEBUG
+===========================
+
+1. I updated my logging to print out all my range values
+I suspect I am setting to wide a front wall scan angle. Instead of 90degrees I am using 30.
+
+[wall_follower_node-1] CURRENT STATE
+[wall_follower_node-1] =============
+[wall_follower_node-1] LEFT:        SIZE = 90, MIN VALUE = 0.317283, MIN ANGLE = 1.486908
+[wall_follower_node-1] RIGHT:       SIZE = 90, MIN VALUE = 0.504661, MIN ANGLE = 4.723120
+[wall_follower_node-1] FRONT LEFT:  SIZE = 15, MIN VALUE = 1.143781, MIN ANGLE = 0.017493
+[wall_follower_node-1] FRONT RIGHT: SIZE = 15, MIN VALUE = 1.154676, MIN ANGLE = 6.192534
+[wall_follower_node-1] [0m
+[wall_follower_node-1] [0m[INFO] [1737826330.512995603] [wall_follower_node]: 
+[wall_follower_node-1] ODOM STATES
+[wall_follower_node-1] ===========
+[wall_follower_node-1] PREV: X = 0.000058, Y = 0.499996, Yaw = 0.000367
+[wall_follower_node-1] CURR: X = 0.000059, Y = 0.499996, Yaw = 0.000368
+[wall_follower_node-1] [0m
+[wall_follower_node-1] [0m[INFO] [1737826330.513042719] [wall_follower_node]: 
+[wall_follower_node-1] ODOM DISTANCES
+[wall_follower_node-1] ==============
+[wall_follower_node-1] FRONT LEFT:  dX = 0.020007, dY = 1.143606
+[wall_follower_node-1] FRONT RIGHT: dX = 0.104529, dY = 1.149935
+[wall_follower_node-1] LEFT:        dX = 0.316168, dY = 0.026585
+[wall_follower_node-1] RIGHT:       dX = 0.504632, dY = 0.005415
+[wall_follower_node-1] [0m
+
+1.) My logger written to a file with ">" terminal operator creates... issues, but regardless 
+    that is a problem for another day 
+2.) Range min/max look fine. Running the cos() sin() in wolfram alpha for confirmation looks 
+    like I am doing them backwards - though the number don't. Yeah RIGHT side is backwards
+    too, I have my x= cos and y=sin backwards
+
+=========================================================================================
+CHANGES MADE FOR NEXT DEBUG
+===========================
+
+1. NICE so it drives to the wall as expected, Just turns too slow. Confriming logs to see 
+   if anything else looks off.
+
+Yeah so far all looks good. Just need to tune drive and turn speed since this 
+isn't a proprotional wall follower.
+
+Seems like the faster it drives the less change it can correct. This does make  
+sense since I am Turning with 1 m/sec in a 2x2 m box with a fast speed of .3 m/s
+
+I guess perhaps I should really slow down
